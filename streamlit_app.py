@@ -78,18 +78,50 @@ scaler, kmeans_model, rf_model = load_models()
 
 # PROVINSI dengan data realistis (populasi, urban, risk)
 PROVINSI_DATA = {
-    31: {'nama': 'DKI JAKARTA', 'populasi': 10_700_000, 'urban': 1.0, 'risk_factor': 1.5, 'color': '#FF6B6B'},
-    32: {'nama': 'JAWA BARAT', 'populasi': 50_000_000, 'urban': 0.6, 'risk_factor': 1.3, 'color': '#4ECDC4'},
-    33: {'nama': 'JAWA TENGAH', 'populasi': 37_000_000, 'urban': 0.5, 'risk_factor': 1.1, 'color': '#45B7D1'},
-    34: {'nama': 'JAWA TIMUR', 'populasi': 40_000_000, 'urban': 0.55, 'risk_factor': 1.2, 'color': '#96CEB4'},
-    35: {'nama': 'DI YOGYAKARTA', 'populasi': 3_700_000, 'urban': 0.9, 'risk_factor': 1.1, 'color': '#FFEAA7'},
-    11: {'nama': 'ACEH', 'populasi': 5_500_000, 'urban': 0.3, 'risk_factor': 0.8, 'color': '#DDA0DD'},
-    12: {'nama': 'SUMATERA UTARA', 'populasi': 14_000_000, 'urban': 0.5, 'risk_factor': 1.0, 'color': '#98D8C8'},
-    13: {'nama': 'SUMATERA BARAT', 'populasi': 5_500_000, 'urban': 0.4, 'risk_factor': 0.9, 'color': '#F7DC6F'},
-    14: {'nama': 'RIAU', 'populasi': 6_400_000, 'urban': 0.6, 'risk_factor': 1.0, 'color': '#BB8FCE'},
-    15: {'nama': 'JAMBI', 'populasi': 3_600_000, 'urban': 0.4, 'risk_factor': 0.85, 'color': '#85C1E9'},
-    52: {'nama': 'BANTEN', 'populasi': 12_000_000, 'urban': 0.8, 'risk_factor': 1.4, 'color': '#F8C471'},
-    53: {'nama': 'BALI', 'populasi': 4_400_000, 'urban': 0.7, 'risk_factor': 1.2, 'color': '#F1948A'},
+    11: {'nama': 'ACEH', 'populasi': 5500000, 'urban': 0.30, 'risk_factor': 0.80, 'color': '#DDA0DD'},
+    12: {'nama': 'SUMATERA UTARA', 'populasi': 15000000, 'urban': 0.50, 'risk_factor': 1.00, 'color': '#98D8C8'},
+    13: {'nama': 'SUMATERA BARAT', 'populasi': 5600000, 'urban': 0.45, 'risk_factor': 0.90, 'color': '#F7DC6F'},
+    14: {'nama': 'RIAU', 'populasi': 6500000, 'urban': 0.60, 'risk_factor': 1.00, 'color': '#BB8FCE'},
+    15: {'nama': 'JAMBI', 'populasi': 3700000, 'urban': 0.40, 'risk_factor': 0.85, 'color': '#85C1E9'},
+    16: {'nama': 'SUMATERA SELATAN', 'populasi': 8900000, 'urban': 0.45, 'risk_factor': 0.95, 'color': '#A9DFBF'},
+    17: {'nama': 'BENGKULU', 'populasi': 2100000, 'urban': 0.35, 'risk_factor': 0.80, 'color': '#AED6F1'},
+    18: {'nama': 'LAMPUNG', 'populasi': 9200000, 'urban': 0.40, 'risk_factor': 0.90, 'color': '#F9E79F'},
+    19: {'nama': 'KEP. BANGKA BELITUNG', 'populasi': 1500000, 'urban': 0.55, 'risk_factor': 0.85, 'color': '#D7BDE2'},
+    21: {'nama': 'KEP. RIAU', 'populasi': 2200000, 'urban': 0.75, 'risk_factor': 1.00, 'color': '#F5CBA7'},
+
+    31: {'nama': 'DKI JAKARTA', 'populasi': 10700000, 'urban': 1.00, 'risk_factor': 1.50, 'color': '#FF6B6B'},
+    32: {'nama': 'JAWA BARAT', 'populasi': 50000000, 'urban': 0.60, 'risk_factor': 1.30, 'color': '#4ECDC4'},
+    33: {'nama': 'JAWA TENGAH', 'populasi': 37000000, 'urban': 0.50, 'risk_factor': 1.10, 'color': '#45B7D1'},
+    34: {'nama': 'DI YOGYAKARTA', 'populasi': 3800000, 'urban': 0.90, 'risk_factor': 1.10, 'color': '#FFEAA7'},
+    35: {'nama': 'JAWA TIMUR', 'populasi': 41000000, 'urban': 0.55, 'risk_factor': 1.20, 'color': '#96CEB4'},
+    36: {'nama': 'BANTEN', 'populasi': 12500000, 'urban': 0.80, 'risk_factor': 1.40, 'color': '#F8C471'},
+
+    51: {'nama': 'BALI', 'populasi': 4500000, 'urban': 0.70, 'risk_factor': 1.10, 'color': '#F1948A'},
+    52: {'nama': 'NUSA TENGGARA BARAT', 'populasi': 5600000, 'urban': 0.35, 'risk_factor': 0.85, 'color': '#D5DBDB'},
+    53: {'nama': 'NUSA TENGGARA TIMUR', 'populasi': 5600000, 'urban': 0.25, 'risk_factor': 0.80, 'color': '#A3E4D7'},
+
+    61: {'nama': 'KALIMANTAN BARAT', 'populasi': 5600000, 'urban': 0.40, 'risk_factor': 0.85, 'color': '#FAD7A0'},
+    62: {'nama': 'KALIMANTAN TENGAH', 'populasi': 2800000, 'urban': 0.35, 'risk_factor': 0.80, 'color': '#F5B7B1'},
+    63: {'nama': 'KALIMANTAN SELATAN', 'populasi': 4300000, 'urban': 0.50, 'risk_factor': 0.90, 'color': '#D2B4DE'},
+    64: {'nama': 'KALIMANTAN TIMUR', 'populasi': 4100000, 'urban': 0.65, 'risk_factor': 1.00, 'color': '#A2D9CE'},
+    65: {'nama': 'KALIMANTAN UTARA', 'populasi': 750000, 'urban': 0.55, 'risk_factor': 0.85, 'color': '#AED6F1'},
+
+    71: {'nama': 'SULAWESI UTARA', 'populasi': 2700000, 'urban': 0.55, 'risk_factor': 0.90, 'color': '#F9E79F'},
+    72: {'nama': 'SULAWESI TENGAH', 'populasi': 3100000, 'urban': 0.35, 'risk_factor': 0.80, 'color': '#D7BDE2'},
+    73: {'nama': 'SULAWESI SELATAN', 'populasi': 9400000, 'urban': 0.50, 'risk_factor': 1.00, 'color': '#F5CBA7'},
+    74: {'nama': 'SULAWESI TENGGARA', 'populasi': 2800000, 'urban': 0.35, 'risk_factor': 0.85, 'color': '#A9DFBF'},
+    75: {'nama': 'GORONTALO', 'populasi': 1200000, 'urban': 0.40, 'risk_factor': 0.80, 'color': '#AED6F1'},
+    76: {'nama': 'SULAWESI BARAT', 'populasi': 1500000, 'urban': 0.30, 'risk_factor': 0.75, 'color': '#FADBD8'},
+
+    81: {'nama': 'MALUKU', 'populasi': 1900000, 'urban': 0.35, 'risk_factor': 0.80, 'color': '#D6EAF8'},
+    82: {'nama': 'MALUKU UTARA', 'populasi': 1300000, 'urban': 0.35, 'risk_factor': 0.75, 'color': '#D5F5E3'},
+
+    91: {'nama': 'PAPUA', 'populasi': 4400000, 'urban': 0.30, 'risk_factor': 0.80, 'color': '#FCF3CF'},
+    92: {'nama': 'PAPUA BARAT', 'populasi': 600000, 'urban': 0.45, 'risk_factor': 0.80, 'color': '#E8DAEF'},
+    93: {'nama': 'PAPUA SELATAN', 'populasi': 550000, 'urban': 0.25, 'risk_factor': 0.75, 'color': '#D4E6F1'},
+    94: {'nama': 'PAPUA TENGAH', 'populasi': 1400000, 'urban': 0.20, 'risk_factor': 0.75, 'color': '#D5F5E3'},
+    95: {'nama': 'PAPUA PEGUNUNGAN', 'populasi': 1500000, 'urban': 0.15, 'risk_factor': 0.70, 'color': '#FCF3CF'},
+    96: {'nama': 'PAPUA BARAT DAYA', 'populasi': 650000, 'urban': 0.45, 'risk_factor': 0.80, 'color': '#FADBD8'}
 }
 
 CLUSTER_INTERPRETASI = [
@@ -158,10 +190,11 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         pop_scale = prov_info['populasi'] / 10_000_000  # Relative to Jakarta
         urban_scale = prov_info['urban']
         risk_scale = prov_info['risk_factor']
-        
         # 4. BASE VALUES from model
-        vaksin_base = max(1, abs(centroid_raw[3]))
-        death_base = max(1, abs(centroid_raw[4]))
+        SCALING_FACTOR = 100_000
+
+        vaksin_base = int(max(1, abs(centroid_raw[3])) * SCALING_FACTOR)
+        death_base = int(max(1, abs(centroid_raw[4])) * SCALING_FACTOR)
         
         # 5. PROVINSI ADJUSTMENT
         vaksin_prov = int(vaksin_base * pop_scale * urban_scale * 1.3)
@@ -275,7 +308,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         
         # === PROVINSI COMPARISON ===
         st.markdown("## 🌍 **Perbandingan Antar Provinsi**")
-        prov_compare = ['31', '32', '34', '11', prov_kode]
+        prov_compare = [31, 32, 34, 11, prov_kode]
         vaksin_list, death_list, prov_names = [], [], []
         
         for pk in prov_compare:
