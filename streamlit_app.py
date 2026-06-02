@@ -146,8 +146,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # === SIDEBAR ===
-st.sidebar.header("🎯 **Parameter Prediksi**")
+st.sidebar.header("🎯 **Parameter Predictor**")
 st.sidebar.markdown("---")
+
+# Pilihan Tipe Model Prediksi untuk mengatasi bias Cluster 0
+prediction_mode = st.sidebar.radio(
+    "🤖 **Metode Deteksi Klaster**",
+    ["Random Forest Classifier", "K-Means (Direct Distance)"],
+    help="Jika Random Forest mengalami Overfitting/Selalu Cluster 0 karena tahun masa depan, gunakan K-Means Direct Distance."
+)
 
 # Provinsi
 prov_kode = st.sidebar.selectbox(
@@ -182,22 +189,51 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
     prov_info = PROVINSI_DATA[prov_kode]
     
     with st.spinner("🔮 Menghitung prediksi masa depan..."):
-        # 1. ESTIMASI DYNAMIC INPUT (Menggantikan hardcoded 0,0,0,0 agar RF bergerak dinamis)
+        # 1. ESTIMASI DYNAMIC INPUT
         years_ahead = tahun - 2024
         pop_scale = prov_info['populasi'] / 10_000_000
         
-        # Penyesuaian nilai mentah skala basis data klaster asli (vaksin: ~40-105, kematian: ~0.005-1.73)
+        # Penyesuaian nilai mentah skala basis data klaster asli
         approx_vaksin = pop_scale * 65.0 * (1 + (trend_boost / 100) * years_ahead)
         approx_death = pop_scale * prov_info['risk_factor'] * 0.4 * max(0.1, 1 - 0.12 * years_ahead)
         
         approx_pct = (approx_death / max(0.001, approx_vaksin)) * 100
         approx_rasio = approx_vaksin / max(0.001, approx_death)
         
-        # Susun array 7 fitur sesuai susunan model aslimu
-        base_input = np.array([[prov_kode, tahun, minggu, approx_vaksin, approx_death, approx_pct, approx_rasio]])
-        base_scaled = scaler.transform(base_input)
-        cluster_pred = int(rf_model.predict(base_scaled)[0])
+        # FIX 1: Capping 'tahun_model' ke batas maksimum historis (misal 2022) agar tidak out-of-bounds pada Scaler & Tree
+        tahun_model = min(tahun, 2022) 
         
+        # Data dictionary masukan sesuai urutan 7 fitur Anda
+        raw_features = {
+            'prov_kode': prov_kode,
+            'tahun': tahun_model,
+            'minggu': minggu,
+            'approx_vaksin': approx_vaksin,
+            'approx_death': approx_death,
+            'approx_pct': approx_pct,
+            'approx_rasio': approx_rasio
+        }
+        
+        # FIX 2: Memaksa format masukan menjadi Pandas DataFrame dengan nama fitur yang selaras
+        # Jika model dilatih dengan DataFrame, ini mencegah pergeseran/misalignment indeks fitur
+        if hasattr(rf_model, 'feature_names_in_'):
+            col_names = list(rf_model.feature_names_in_)
+            # Dipetakan secara dinamis berdasarkan posisi 7 kolom default Anda
+            default_keys = ['prov_kode', 'tahun', 'minggu', 'approx_vaksin', 'approx_death', 'approx_pct', 'approx_rasio']
+            mapped_data = {col_names[i]: raw_features[default_keys[i]] for i in range(min(len(col_names), len(default_keys)))}
+            df_input = pd.DataFrame([mapped_data])
+        else:
+            df_input = pd.DataFrame([[prov_kode, tahun_model, minggu, approx_vaksin, approx_death, approx_pct, approx_rasio]])
+        
+        # Transformasi fitur menggunakan scaler yang sama
+        base_scaled = scaler.transform(df_input)
+        
+        # FIX 3: Memberikan alternatif pemanggilan langsung klaster lewat K-Means jika Random Forest Mengunci di Kelas 0
+        if prediction_mode == "Random Forest Classifier":
+            cluster_pred = int(rf_model.predict(base_scaled)[0])
+        else:
+            cluster_pred = int(kmeans_model.predict(base_scaled)[0])
+            
         # 2. GET CENTROID
         centroid_scaled = kmeans_model.cluster_centers_[cluster_pred]
         centroid_raw = scaler.inverse_transform([centroid_scaled])[0]
@@ -210,7 +246,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         vaksin_base = int(max(1, abs(centroid_raw[3])) * SCALING_FACTOR)
         death_base = int(max(1, abs(centroid_raw[4])) * SCALING_FACTOR)
         
-        # 4. FINAL CALCULATIONS
+        # 4. FINAL CALCULATIONS (Menggunakan tahun rill dari UI untuk visualisasi tren masa depan)
         vaksin_prov = int(vaksin_base * pop_scale * urban_scale * 1.3)
         death_prov = int(death_base * pop_scale * risk_scale * 0.9)
         
@@ -264,7 +300,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         st.markdown(f"""
         <div class="future-badge">
             🔮 **PREDIKSI {tahun}: {prov_info['nama']}** | 
-            {CLUSTER_INTERPRETASI.get(cluster_pred)}
+            {CLUSTER_INTERPRETASI.get(cluster_pred, "Status Tidak Diketahui")}
         </div>
         """, unsafe_allow_html=True)
         
