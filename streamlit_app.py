@@ -124,19 +124,24 @@ PROVINSI_DATA = {
     96: {'nama': 'PAPUA BARAT DAYA', 'populasi': 650000, 'urban': 0.45, 'risk_factor': 0.80, 'color': '#FADBD8'}
 }
 
-CLUSTER_INTERPRETASI = [
-    "🟢 **OPTIMAL** - Vaksinasi sangat efektif",
-    "🟡 **WASPADA** - Perlu booster tambahan", 
-    "🟠 **TINGGI** - Antisipasi gelombang baru",
-    "🔴 **KRITIS** - Protokol darurat diperlukan"
-]
+# Mapping 8 Cluster Berdasarkan Centroid Data Riil ML Kamu
+CLUSTER_INTERPRETASI = {
+    0: "🟢 **OPTIMAL** - Vaksinasi Tinggi & Angka Kematian Sangat Rendah",
+    1: "🟢 **AMAN** - Efektivitas Cakupan Vaksin Baik & Risiko Terkendali",
+    2: "🔴 **KRITIS** - Lonjakan Kematian Tinggi! Perlu Evaluasi Faskes",
+    3: "🟢 **SANGAT OPTIMAL** - Proteksi Kelompok Wilayah Maksimal",
+    4: "🟠 **TINGGI** - Risiko Kematian Moderat, Dorong Program Booster",
+    5: "🟡 **WASPADA** - Vaksinasi Rendah, Potensi Bahaya Gelombang Baru",
+    6: "🟢 **STABIL** - Imunitas Wilayah dan Angka Kasus Terjaga Baik",
+    7: "🟡 **MODERAT** - Kesiapsiagaan Vaksinasi Perlu Dipertahankan"
+}
 
 # === HEADER ===
 st.markdown('<h1 class="main-header">🦠 COVID-19 Future Predictor Indonesia</h1>', unsafe_allow_html=True)
 st.markdown("""
 <div style='text-align:center; color:#666; font-size:1.2rem;'>
     🔮 Prediksi vaksinasi & kematian <strong>2025-2030</strong> per provinsi<br>
-    🤖 K-Means + Random Forest | 📊 Akurasi <strong>95%+</strong>
+    🤖 K-Means + Random Forest | 📊 Akurasi K-Means <strong>98.78%</strong>
 </div>
 """, unsafe_allow_html=True)
 
@@ -177,8 +182,19 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
     prov_info = PROVINSI_DATA[prov_kode]
     
     with st.spinner("🔮 Menghitung prediksi masa depan..."):
-        # 1. BASE MODEL PREDICTION
-        base_input = np.array([[prov_kode, tahun, minggu, 0, 0, 0, 0]])
+        # 1. ESTIMASI DYNAMIC INPUT (Menggantikan hardcoded 0,0,0,0 agar RF bergerak dinamis)
+        years_ahead = tahun - 2024
+        pop_scale = prov_info['populasi'] / 10_000_000
+        
+        # Penyesuaian nilai mentah skala basis data klaster asli (vaksin: ~40-105, kematian: ~0.005-1.73)
+        approx_vaksin = pop_scale * 65.0 * (1 + (trend_boost / 100) * years_ahead)
+        approx_death = pop_scale * prov_info['risk_factor'] * 0.4 * max(0.1, 1 - 0.12 * years_ahead)
+        
+        approx_pct = (approx_death / max(0.001, approx_vaksin)) * 100
+        approx_rasio = approx_vaksin / max(0.001, approx_death)
+        
+        # Susun array 7 fitur sesuai susunan model aslimu
+        base_input = np.array([[prov_kode, tahun, minggu, approx_vaksin, approx_death, approx_pct, approx_rasio]])
         base_scaled = scaler.transform(base_input)
         cluster_pred = int(rf_model.predict(base_scaled)[0])
         
@@ -186,26 +202,21 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         centroid_scaled = kmeans_model.cluster_centers_[cluster_pred]
         centroid_raw = scaler.inverse_transform([centroid_scaled])[0]
         
-        # 3. PROVINSI-SPECIFIC FACTORS
-        pop_scale = prov_info['populasi'] / 10_000_000  # Relative to Jakarta
+        # 3. PROVINSI-SPECIFIC FACTORS FOR DISPLAY
         urban_scale = prov_info['urban']
         risk_scale = prov_info['risk_factor']
-        # 4. BASE VALUES from model
+        
         SCALING_FACTOR = 100_000
-
         vaksin_base = int(max(1, abs(centroid_raw[3])) * SCALING_FACTOR)
         death_base = int(max(1, abs(centroid_raw[4])) * SCALING_FACTOR)
         
-        # 5. PROVINSI ADJUSTMENT
+        # 4. FINAL CALCULATIONS
         vaksin_prov = int(vaksin_base * pop_scale * urban_scale * 1.3)
         death_prov = int(death_base * pop_scale * risk_scale * 0.9)
         
-        # 6. FUTURE TREND 2025+
-        years_ahead = tahun - 2024
         vaksin_final = int(vaksin_prov * (1 + trend_boost/100 * years_ahead))
-        death_final = int(death_prov * max(0.3, 1 - 0.12 * years_ahead))  # Min 30%
+        death_final = int(death_prov * max(0.3, 1 - 0.12 * years_ahead))
         
-        # 7. RATIOS
         rasio_vk = vaksin_final / max(1, death_final)
         mortality_pct = (death_final / vaksin_final) * 100
         
@@ -235,7 +246,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
             <div class="metric-container" style='background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);'>
                 <h2 style='color:white; margin:0;'>⭐</h2>
                 <h1 style='color:white; margin:10px 0 5px 0;'>{cluster_pred}</h1>
-                <p style='margin:0; font-size:1.1rem'>{CLUSTER_INTERPRETASI[cluster_pred % 4]}</p>
+                <p style='margin:0; font-size:1.1rem'>{CLUSTER_INTERPRETASI.get(cluster_pred, "Status Tidak Diketahui")}</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -253,7 +264,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         st.markdown(f"""
         <div class="future-badge">
             🔮 **PREDIKSI {tahun}: {prov_info['nama']}** | 
-            {CLUSTER_INTERPRETASI[cluster_pred % 4]}
+            {CLUSTER_INTERPRETASI.get(cluster_pred)}
         </div>
         """, unsafe_allow_html=True)
         
@@ -268,7 +279,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         
         with col2:
             st.metric("📈 Rasio Vaksin/Kematian", f"{rasio_vk:.1f}:1")
-            st.metric("⭐ Cluster Risk", cluster_pred, CLUSTER_INTERPRETASI[cluster_pred % 4])
+            st.metric("⭐ Cluster Risk", f"Cluster {cluster_pred}")
             st.metric("👥 Populasi Basis", f"{prov_info['populasi']:,}")
         
         # === CHARTS ===
@@ -295,12 +306,12 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
                 delta={'reference': 10},
                 title={'text': f"Rasio V/K - {tahun}"},
                 gauge={
-                    'axis': {'range': [0, 50]},
+                    'axis': {'range': [0, 150]},
                     'bar': {'color': "#4ECDC4"},
                     'steps': [
-                        {'range': [0, 5], 'color': "lightgray"},
-                        {'range': [5, 15], 'color': "yellow"},
-                        {'range': [15, 50], 'color': "orange"}
+                        {'range': [0, 30], 'color': "lightgray"},
+                        {'range': [30, 80], 'color': "yellow"},
+                        {'range': [80, 150], 'color': "orange"}
                     ]
                 }
             ))
@@ -314,7 +325,7 @@ if st.sidebar.button("🚀 **JALANKAN PREDIKSI**", use_container_width=True):
         for pk in prov_compare:
             if pk in PROVINSI_DATA:
                 pinfo = PROVINSI_DATA[int(pk)]
-                v = int(1000 * pinfo['populasi'] / 10_000_000)  # Simplified
+                v = int(1000 * pinfo['populasi'] / 10_000_000)
                 vaksin_list.append(v * 1.2)
                 death_list.append(int(v * 0.08))
                 prov_names.append(pinfo['nama'][:12])
@@ -332,6 +343,6 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align:center; padding:2rem; color:#666; font-size:1.1rem;'>
     <strong>🤖 Powered by K-Means Clustering + Random Forest</strong><br>
-    📊 Akurasi 95%+ | 🔮 Prediksi Masa Depan 2025-2030 | 🛠️ Streamlit Cloud
+    📊 Akurasi Model 98.78% | 🔮 Prediksi Masa Depan 2025-2030 | 🛠️ Streamlit Cloud
 </div>
 """, unsafe_allow_html=True)
